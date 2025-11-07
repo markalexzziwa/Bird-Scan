@@ -369,23 +369,18 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
-                if st.button("Watch Video", key="watch_video_button"):
-                    st.session_state.show_video = True
-                    st.experimental_rerun()
-    
-    
-                if st.session_state.show_video:
-                    species_name = result['species'].replace(' ', '+')
-                    youtube_url = f"https://www.youtube.com/results?search_query={species_name}+bird"
+            if st.button("Watch Video", key="watch_video_button"):
+                st.markdown("---")
+                st.markdown(f"### 🎥 Now Playing: {result['species']} Video")
         
-                    st.markdown("---")
-                    st.markdown(f"### 🎥 Educational Videos: {result['species']}")
-                    st.markdown(f"🔍 [Search on YouTube]({youtube_url})")
-        
-        # Close video section
-                    if st.button("Close Videos", key="close_videos"):
-                        st.session_state.show_video = False
-                        st.experimental_rerun()
+                try:
+            # Play the video file directly
+                    st.video("Blacks.mp4")
+                except FileNotFoundError:
+                    st.error("❌ Video file 'Blacks.mp4' not found.")
+                    st.info("Please make sure 'Blacks.mp4' is in the same folder as your Python script.")
+                except Exception as e:
+                    st.error(f"Error playing video: {e}")
 
     with tab_camera:
         if 'camera_active' not in st.session_state:
