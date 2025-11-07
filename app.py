@@ -369,9 +369,6 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)  # small spacing
-
-# Play local video: Blacks.mp4 (must be in the same folder as app.py)
                 if st.button("Watch Video", key="watch_video_upload_button"):
                     video_path = "Blacks.mp4"
                     try:
