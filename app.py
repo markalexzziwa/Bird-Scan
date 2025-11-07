@@ -369,6 +369,7 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
+                st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("Watch Video", key="watch_video_upload_button"):
                     video_path = "Blacks.mp4"
                     try:
