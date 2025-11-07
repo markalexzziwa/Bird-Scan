@@ -365,9 +365,20 @@ with st.container():
                 st.markdown(f"""
                 <div class='result-item'>
                     <div class='result-species'>{result['species']}</div>
-                    <div class='result-confidence'>Confidence: {result['confidence']:.2f}%</div>
+                    <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
                 </div>
                 """, unsafe_allow_html=True)
+                #123
+                if st.button("Watch Video", key="watch_video_after_identify"):
+        # You can make this species-specific
+                    species_name = result['species'].lower().replace(' ', '_')
+                    st.info(f"🎥 Searching for {result['species']} videos...")
+        
+        # Example: Open YouTube search
+                    youtube_url = f"https://www.youtube.com/results?search_query={result['species'].replace(' ', '+')}+bird"
+                    st.markdown(f"[Watch {result['species']} videos on YouTube]({youtube_url})", unsafe_allow_html=True)
+                
+
                 
                 
     with tab_camera:
@@ -434,9 +445,10 @@ with st.container():
                     st.markdown(f"""
                     <div class='result-item'>
                         <div class='result-species'>{result['species']}</div>
-                        <div class='result-confidence'>Confidence: {result['confidence']:.2f}%</div>
+                        <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
                     </div>
                     """, unsafe_allow_html=True)
+                    
                     
                     
             if st.button("Stop Camera ⏹️", key="stop_camera_button", help="Click to stop camera preview"):
