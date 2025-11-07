@@ -370,10 +370,10 @@ with st.container():
                 """, unsafe_allow_html=True)
 
                 if st.button("Watch Video", key="watch_video_button"):
-                    species_name = result['species'].replace(' ', '+')
-                    youtube_url = f"https://www.youtube.com/results?search_query={species_name}+bird+wildlife"
-                    st.markdown(f"[🎥 Watch **{result['species']}** videos on YouTube]({youtube_url})", unsafe_allow_html=True)            
-
+    # Use YouTube API or predefined videos
+                    st.video(f"https://www.youtube.com/watch?v=SPECIFIC_VIDEO_ID")
+    # Or search-based
+                    st.components.v1.iframe(f"https://www.youtube.com/embed?listType=search&list={result['species']} bird", height=400)
                 
 
     with tab_camera:
