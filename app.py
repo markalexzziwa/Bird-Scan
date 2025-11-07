@@ -370,11 +370,22 @@ with st.container():
                 """, unsafe_allow_html=True)
 
                 if st.button("Watch Video", key="watch_video_button"):
-    # Use YouTube API or predefined videos
-                    st.video(f"https://www.youtube.com/watch?v=SPECIFIC_VIDEO_ID")
-    # Or search-based
-                    st.components.v1.iframe(f"https://www.youtube.com/embed?listType=search&list={result['species']} bird", height=400)
-                
+                    st.session_state.show_video = True
+                    st.experimental_rerun()
+    
+    
+                if st.session_state.show_video:
+                    species_name = result['species'].replace(' ', '+')
+                    youtube_url = f"https://www.youtube.com/results?search_query={species_name}+bird"
+        
+                    st.markdown("---")
+                    st.markdown(f"### 🎥 Educational Videos: {result['species']}")
+                    st.markdown(f"🔍 [Search on YouTube]({youtube_url})")
+        
+        # Close video section
+                    if st.button("Close Videos", key="close_videos"):
+                        st.session_state.show_video = False
+                        st.experimental_rerun()
 
     with tab_camera:
         if 'camera_active' not in st.session_state:
