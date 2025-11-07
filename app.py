@@ -370,7 +370,9 @@ with st.container():
                 """, unsafe_allow_html=True)
 
                 if st.button("Watch Video", key="watch_video_button"):
-                    st.info("🎥 Video feature coming soon!")            
+                    species_name = result['species'].replace(' ', '+')
+                    youtube_url = f"https://www.youtube.com/results?search_query={species_name}+bird+wildlife"
+                    st.markdown(f"[🎥 Watch **{result['species']}** videos on YouTube]({youtube_url})", unsafe_allow_html=True)            
 
                 
 
