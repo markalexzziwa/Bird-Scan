@@ -368,19 +368,12 @@ with st.container():
                     <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
                 </div>
                 """, unsafe_allow_html=True)
-                #123
-                if st.button("Watch Video", key="watch_video_after_identify"):
-        # You can make this species-specific
-                    species_name = result['species'].lower().replace(' ', '_')
-                    st.info(f"🎥 Searching for {result['species']} videos...")
-        
-        # Example: Open YouTube search
-                    youtube_url = f"https://www.youtube.com/results?search_query={result['species'].replace(' ', '+')}+bird"
-                    st.markdown(f"[Watch {result['species']} videos on YouTube]({youtube_url})", unsafe_allow_html=True)
-                
+
+                if st.button("Watch Video", key="watch_video_button"):
+                    st.info("🎥 Video feature coming soon!")            
 
                 
-                
+
     with tab_camera:
         if 'camera_active' not in st.session_state:
             st.session_state.camera_active = False
