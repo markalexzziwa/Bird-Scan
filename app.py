@@ -370,9 +370,18 @@ with st.container():
                 """, unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)  # small spacing
-            video_url = "https://www.youtube.com/watch?v=your_video_id"  # ← CHANGE THIS
-            if st.button("🎥 Watch Video", key="watch_video_upload_button"):
-                st.video(video_url)
+
+# Play local video: Blacks.mp4 (must be in the same folder as app.py)
+            if st.button("Watch Video", key="watch_video_upload_button"):
+                video_path = "Blacks.mp4"
+                try:
+                    with open(video_path, "rb") as video_file:
+                        video_bytes = video_file.read()
+                    st.video(video_bytes)
+                except FileNotFoundError:
+                    st.error("Video file 'Blacks.mp4' not found. Make sure it's in the same folder as app.py.")
+                except Exception as e:
+                    st.error(f"Could not load video: {e}")
 
             
 
