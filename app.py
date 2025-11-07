@@ -443,16 +443,6 @@ with st.container():
                 st.session_state.camera_active = False
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # Sidebar info
-    with st.sidebar:
-        st.markdown("""
-        <div class='card fade'>
-          <h4>Bird Scan</h4>
-          <div class='hint'>You can identify the bird now using the photo from your gallery or take a snap now of the bird near you</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Footer
     st.markdown(
         """
         <div style='text-align:center; color:#334155; margin-top: 1rem; font-size:.9rem;'>
