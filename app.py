@@ -369,10 +369,10 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)  # small spacing
-                video_url = "https://www.youtube.com/watch?v=your_video_id"  # ← CHANGE THIS
-                if st.button("🎥 Watch Video", key="watch_video_upload_button"):
-                    st.video(video_url)
+        st.markdown("<br>", unsafe_allow_html=True)  # small spacing
+        video_url = "https://www.youtube.com/watch?v=your_video_id"  # ← CHANGE THIS
+        if st.button("🎥 Watch Video", key="watch_video_upload_button"):
+            st.video(video_url)
 
             
 
