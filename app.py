@@ -487,21 +487,6 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Watch Video", key="watch_video_upload_button"):
-                video_path = "Blacks.mp4"
-                try:
-                    with open(video_path, "rb") as video_file:
-                        video_bytes = video_file.read()
-                    st.video(video_bytes)
-                except FileNotFoundError:
-                    st.error("Video file 'Blacks.mp4' not found. Make sure it's in the same folder as app.py.")
-                except Exception as e:
-                    st.error(f"Could not load video: {e}")
-            #123
-
-            
-#12334
             bird_name = st.text_input("Bird Name", placeholder="e.g. African Jacana").strip().title()
 
             if bird_name:
