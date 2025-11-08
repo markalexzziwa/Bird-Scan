@@ -499,11 +499,8 @@ with st.container():
                 except Exception as e:
                     st.error(f"Could not load video: {e}")
             #123
-            st.title("Uganda Bird Video Generator")
-            st.caption("Enter a bird name → get a narrated video")
 
-            with st.expander("Available birds"):
-                st.write(", ".join(sorted(bird_db.keys())))
+            
 #12334
             bird_name = st.text_input("Bird Name", placeholder="e.g. African Jacana").strip().title()
 
@@ -543,6 +540,8 @@ with st.container():
 
                             shutil.rmtree(tmp, ignore_errors=True)
                             st.success("Done!")
+            with st.expander("Available birds"):
+                st.write(", ".join(sorted(bird_db.keys())))                
 
 
             
