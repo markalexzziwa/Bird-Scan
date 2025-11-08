@@ -463,55 +463,7 @@ with st.container():
             if st.button("Stop Camera ⏹️", key="stop_camera_button", help="Click to stop camera preview"):
                 st.session_state.camera_active = False
         st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown(
-        """
-        <div style='text-align:center; color:#334155; margin-top: 1rem; font-size:.9rem;'>
-            Built for the Love of Nature
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown("""
-        <style>
-        .footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background: linear-gradient(135deg, #0f172a, #1f2937);
-        color: white;
-        text-align: center;
-        padding: 1rem 1.5rem;
-        font-size: 0.95rem;
-        font-weight: 500;
-        z-index: 999;
-        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
-        border-top: 1px solid rgba(255,255,255,0.1);}
-        .footer a {
-        color: #86efac;
-        text-decoration: none;
-        font-weight: 600;}
-        .footer a:hover {
-        text-decoration: underline;}
-        </style>
-
-        <div class="footer">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            Bird Scan — Identify Ugandan birds with AI
-        </div>
-        <div>
-            Made with <span style="color:#f87171;">heart</span> by <a href="https://x.com/yourhandle" target="_blank">@yourhandle</a>
-        </div>
-        <div>
-            <a href="#">Privacy</a> • <a href="#">Terms</a> • <a href="#">About</a>
-        </div>
-        </div>
-        </div>
-        """, unsafe_allow_html=True)
-    # (no wrapper divs to close)
-@st.cache_resource
+    @st.cache_resource
 def load_modal():
     pth_path = "bird_video_generator_modal.pth"
     if not Path(pth_path).exists():
@@ -566,3 +518,51 @@ if bird_name:
                 st.success("Done!")
 
 
+
+    st.markdown(
+        """
+        <div style='text-align:center; color:#334155; margin-top: 1rem; font-size:.9rem;'>
+            Built for the Love of Nature
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("""
+        <style>
+        .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background: linear-gradient(135deg, #0f172a, #1f2937);
+        color: white;
+        text-align: center;
+        padding: 1rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        z-index: 999;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+        border-top: 1px solid rgba(255,255,255,0.1);}
+        .footer a {
+        color: #86efac;
+        text-decoration: none;
+        font-weight: 600;}
+        .footer a:hover {
+        text-decoration: underline;}
+        </style>
+
+        <div class="footer">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            Bird Scan — Identify Ugandan birds with AI
+        </div>
+        <div>
+            Made with <span style="color:#f87171;">heart</span> by <a href="https://x.com/yourhandle" target="_blank">@yourhandle</a>
+        </div>
+        <div>
+            <a href="#">Privacy</a> • <a href="#">Terms</a> • <a href="#">About</a>
+        </div>
+        </div>
+        </div>
+        """, unsafe_allow_html=True)
+    # (no wrapper divs to close)
