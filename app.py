@@ -450,99 +450,83 @@ with st.container():
 
     tab_upload, tab_camera = st.tabs(["📁 Upload", "📷 Camera"])
 
-    with tab_upload:
-        st.markdown("<h4>📁 Upload Image</h4>", unsafe_allow_html=True)
-        st.markdown("<div class='hint'>PNG or JPEG. Clear, close-up shots improve results.</div>", unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("Select a bird image", type=['png', 'jpg', 'jpeg'], key="uploader_file")
-        if uploaded_file is not None:
-            # Clear previous result when new image is uploaded
-            if 'upload_result' in st.session_state:
-                del st.session_state.upload_result
-            
-            image = Image.open(uploaded_file)
-            st.image(image, caption='Uploaded Image', use_column_width=True)
-            
-            if st.button("Identify Specie", key="identify_specie_upload_button"):
-                if model is not None and label_map is not None:
-                    with st.spinner("🔍 Analyzing image..."):
-                        result = predict_species(model, label_map, image)
-                    
-                    if result:
-                        # Store result in session state
-                        st.session_state.upload_result = result
-                        st.session_state.upload_image = image
-                    else:
-                        st.error("Failed to predict species. Please try again.")
-                else:
-                    st.error("Model or label map not loaded. Please check if the files exist.")
+    if st.button("Identify Specie", key="identify_specie_upload_button"):
+        if model is not None and label_map is not None:
+            with st.spinner("Analyzing image..."):
+                result = predict_species(model, label_map, image)
+        
+            if result:
+            # Store result in session state
+                st.session_state.upload_result = result
+                st.session_state.upload_image = image
+                st.session_state.show_video_generator = True  # This enables the video section
+            else:
+                st.error("Failed to predict species. Please try again.")
+        else:
+            st.error("Model or label map not loaded. Please check if the files exist.")
 
-            
-            if 'upload_result' in st.session_state and st.session_state.upload_result:
-                result = st.session_state.upload_result
-                st.markdown("<div class='result-title'>🦅 Identification Result</div>", unsafe_allow_html=True)
-                st.markdown(f"""
-                <div class='result-item'>
-                    <div class='result-species'>{result['species']}</div>
-                    <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
-                </div>
-                """, unsafe_allow_html=True)
+# ────────────────────────────────────────────────────────────────
+# 1. Show result (only after identification)
+# ────────────────────────────────────────────────────────────────
+    if st.session_state.get("upload_result"):
+        result = st.session_state.upload_result
+        st.markdown("<div class='result-title'>Identification Result</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class='result-item'>
+            <div class='result-species'>{result['species']}</div>
+            <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Watch Video", key="watch_video_upload_button"):
-                video_path = "Blacks.mp4"
-                try:
-                    with open(video_path, "rb") as video_file:
-                        video_bytes = video_file.read()
-                    st.video(video_bytes)
-                except FileNotFoundError:
-                    st.error("Video file 'Blacks.mp4' not found. Make sure it's in the same folder as app.py.")
-                except Exception as e:
-                    st.error(f"Could not load video: {e}")
-            #123
-            st.title("Uganda Bird Video Generator")
-            st.caption("Enter a bird name → get a narrated video")
+# ────────────────────────────────────────────────────────────────
+# 2. VIDEO GENERATOR – ONLY AFTER IDENTIFY BUTTON
+# ────────────────────────────────────────────────────────────────
+    if st.session_state.get("show_video_generator", False):
+        bird_name = result['species'].strip().title()
 
-            with st.expander("Available birds"):
-                st.write(", ".join(sorted(bird_db.keys())))
+        st.markdown("---")
+        st.title("Uganda Bird Video Generator")
+        st.caption(f"Auto-filled with: **{bird_name}**")
 
-            bird_name = {result['species']}.strip().title()
-            if bird_name:
-                if bird_name not in bird_db:
-                    st.error(f"**{bird_name}** not found.")
-                else:
-                    if st.button("Generate Video", type="primary"):
-                        with st.spinner("Generating..."):
-                            data = bird_db[bird_name]
-                            story = generate_story(bird_name, data["desc"], data["colors"])
+        with st.expander("Available birds"):
+            st.write(", ".join(sorted(bird_db.keys())))
 
-                # Temp dir
-                            tmp = tempfile.mkdtemp()
-                            img_paths = []
+        if bird_name in bird_db:
+            with st.spinner(f"Generating video for **{bird_name}**..."):
+                data = bird_db[bird_name]
+                story = generate_story(bird_name, data["desc"], data["colors"])
+                tmp = tempfile.mkdtemp()
+                img_paths = []
 
-                # Decode images
-                            for i, b64 in enumerate(data["images_b64"]):
-                                img_data = base64.b64decode(b64)
-                                img = Image.open(BytesIO(img_data))
-                                p = os.path.join(tmp, f"img_{i}.jpg")
-                                img.save(p, "JPEG")
-                                img_paths.append(p)
+                for i, b64 in enumerate(data["images_b64"]):
+                    img_data = base64.b64decode(b64)
+                    img = Image.open(BytesIO(img_data))
+                    p = os.path.join(tmp, f"img_{i}.jpg")
+                    img.save(p, "JPEG")
+                    img_paths.append(p)
 
-                # TTS
-                            audio_path = os.path.join(tmp, "voice.mp3")
-                            natural_tts(story, audio_path)
+                audio_path = os.path.join(tmp, "voice.mp3")
+                natural_tts(story, audio_path)
 
-                # Video
-                            out_path = os.path.join(tmp, f"{bird_name.replace(' ', '_')}.mp4")
-                            create_video(img_paths, audio_path, out_path)
+                out_path = os.path.join(tmp, f"{bird_name.replace(' ', '_')}.mp4")
+                create_video(img_paths, audio_path, out_path)
 
-                # Show
-                            st.video(out_path)
-                            with open(out_path, "rb") as f:
-                                st.download_button("Download Video", f, f"{bird_name}.mp4", "video/mp4")
+                st.video(out_path)
+                with open(out_path, "rb") as f:
+                    st.download_button("Download Video", f, f"{bird_name}.mp4", "video/mp4")
 
-                            shutil.rmtree(tmp, ignore_errors=True)
-                            st.success("Done!")
+                shutil.rmtree(tmp, ignore_errors=True)
+                st.success("Video generated automatically!")
+        else:
+            st.error(f"**{bird_name}** not found in database.")
 
+    # Optional: Reset
+        if st.button("Start Over"):
+            keys = ["upload_result", "show_video_generator", "upload_image"]
+            for k in keys:
+                if k in st.session_state:
+                    del st.session_state[k]
+            st.rerun()
 
             
 
