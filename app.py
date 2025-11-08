@@ -11,9 +11,14 @@ from gtts import gTTS
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 import tempfile
 import random
+#1234
+import streamlit as st
+import torch
+import os
+import tempfile
+import shutil
+from pathlib import Path
 
-
-#123
 # Display logo (centered and resized to one-quarter of original dimensions)
 def _set_background_glass(img_path: str = "ugb1.png"):
     """Set a full-page background using the given image and add a translucent glass
@@ -506,3 +511,58 @@ with st.container():
         </div>
         """, unsafe_allow_html=True)
     # (no wrapper divs to close)
+@st.cache_resource
+def load_modal():
+    pth_path = "bird_video_generator_modal.pth"
+    if not Path(pth_path).exists():
+        st.error(f"Cannot find `{pth_path}`. Place it in the same folder as this script.")
+        st.stop()
+    return torch.load(pth_path, map_location="cpu")
+
+modal = load_modal()
+
+# ───── Show available birds (optional help) ─────
+available = sorted(modal.db.keys())
+with st.expander("See all birds in the database"):
+    st.write(", ".join(available))
+
+# ───── User input ─────
+bird_name = st.text_input(
+    "Bird name (exact match, case-insensitive)",
+    placeholder="e.g. African Jacana"
+).strip()
+
+if bird_name:
+    bird_name = bird_name.title()               # normalise
+    if bird_name not in modal.db:
+        st.error(f"**{bird_name}** not found. Pick one from the list above.")
+    else:
+        if st.button("Generate Video", type="primary"):
+            with st.spinner(f"Creating video for **{bird_name}** …"):
+                # temporary folder for this run
+                tmp_dir = tempfile.mkdtemp()
+                output_path = os.path.join(tmp_dir, f"{bird_name.replace(' ', '_')}_video.mp4")
+
+                try:
+                    video_file = modal.generate(bird_name, output_path)
+                except Exception as e:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                    st.exception(e)
+                    st.stop()
+
+                # ───── Show video + download ─────
+                st.video(video_file)
+
+                with open(video_file, "rb") as f:
+                    st.download_button(
+                        label="Download MP4",
+                        data=f,
+                        file_name=Path(video_file).name,
+                        mime="video/mp4"
+                    )
+
+                # clean up
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+                st.success("Done!")
+
+
