@@ -487,9 +487,8 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
+            bird_name = st.text_input("Know more about the predicted specie<br>Write the specie name to Generate video", placeholder="e.g. African Jacana").strip().title()
             
-            bird_name = st.text_input("Bird Name", value= result['species'], placeholder="e.g. African Jacana").strip().title()
-
 
             if bird_name:
                 if bird_name not in bird_db:
