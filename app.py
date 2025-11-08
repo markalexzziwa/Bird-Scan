@@ -487,7 +487,7 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
-            bird_name = st.text_input("Know more about the predicted specie<br>Write the specie name to Generate video", placeholder="e.g. African Jacana").strip().title()
+            bird_name = st.text_input("Know more about the predicted specie. Write the specie name to Generate video", placeholder="e.g. African Jacana").strip().title()
             
 
             if bird_name:
@@ -599,7 +599,49 @@ with st.container():
                         <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+                                
+                    bird_name = st.text_input("Know more about the predicted specie. Write the specie name to Generate video", placeholder="e.g. African Jacana").strip().title()
+            
+
+            if bird_name:
+                if bird_name not in bird_db:
+                    st.error(f"**{bird_name}** not found.")
+                else:
+                    if st.button("Generate Video", type="primary"):
+                        with st.spinner("Generating..."):
+                            data = bird_db[bird_name]
+                            story = generate_story(bird_name, data["desc"], data["colors"])
+
+                # Temp dir
+                            tmp = tempfile.mkdtemp()
+                            img_paths = []
+
+                # Decode images
+                            for i, b64 in enumerate(data["images_b64"]):
+                                img_data = base64.b64decode(b64)
+                                img = Image.open(BytesIO(img_data))
+                                p = os.path.join(tmp, f"img_{i}.jpg")
+                                img.save(p, "JPEG")
+                                img_paths.append(p)
+
+                # TTS
+                            audio_path = os.path.join(tmp, "voice.mp3")
+                            natural_tts(story, audio_path)
+
+                # Video
+                            out_path = os.path.join(tmp, f"{bird_name.replace(' ', '_')}.mp4")
+                            create_video(img_paths, audio_path, out_path)
+
+                # Show
+                            st.video(out_path)
+                            with open(out_path, "rb") as f:
+                                st.download_button("Download Video", f, f"{bird_name}.mp4", "video/mp4")
+
+                            shutil.rmtree(tmp, ignore_errors=True)
+                            st.success("Done!")
+            with st.expander("Available birds"):
+                st.write(", ".join(sorted(bird_db.keys())))                
+
                     
                     
             if st.button("Stop Camera ⏹️", key="stop_camera_button", help="Click to stop camera preview"):
