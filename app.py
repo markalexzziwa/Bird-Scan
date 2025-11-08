@@ -11,152 +11,10 @@ from gtts import gTTS
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 import tempfile
 import random
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
-from moviepy.audio.fx.all import audio_fadein, audio_fadeout
-from gtts import gTTS
-import base64, random, glob, os, io
 
 
 #123
-# --------------------------------------------------------------
-#  AllBirdsVideoMaker – the *exact* class that was saved to alls.pth
-# ---------
-import base64, random, glob, os
-# --------------------------------------------------------------
-#  Load CSV → bird_data (must be in the same folder as app.py)
-# --------------------------------------------------------------
-import pandas as pd
-
-@st.cache_data
-def load_bird_csv():
-    csv_path = "birdsuganda.csv"
-    if not os.path.exists(csv_path):
-        st.error(f"CSV not found: {csv_path}")
-        return {}
-    df = pd.read_csv(csv_path)
-    bird_data = {}
-    for _, r in df.iterrows():
-        name   = r['common_name']
-        folder = r['folder_path']
-        imgs   = [os.path.join(folder, f) for f in os.listdir(folder)
-                  if f.lower().endswith(('.jpg','.jpeg','.png'))]
-        if not imgs: continue
-        b64_imgs = [base64.b64encode(open(p, "rb").read()).decode() for p in imgs]
-        bird_data[name] = {
-            'description': r['description'],
-            'colors'     : r['colors'].split(',') if 'colors' in r else [],
-            'images_b64' : b64_imgs
-        }
-    return bird_data
-
-bird_data = load_bird_csv()
-TEMPLATES = [
-    "The {name} is famous for its {color_phrase} plumage. {desc}",
-    "In Uganda you can spot the {name} with {color_phrase} feathers. {desc}"
-]
-bird_data = load_bird_csv()
-TEMPLATES = [
-    "The {name} is famous for its {color_phrase} plumage. {desc}",
-    "In Uganda you can spot the {name} with {color_phrase} feathers. {desc}"
-]
-
-# --------------------------------------------------------------
-#  AllBirdsVideoMaker – robust version (fallback + name normalisation)
-# --------------------------------------------------------------
-
-class AllBirdsVideoMaker:
-    def __init__(self, bird_data, templates):
-        self.bird_data = bird_data
-        self.templates = templates
-
-    def _normalize(self, name: str) -> str:
-        """Strip, lower‑case → consistent key lookup."""
-        return name.strip().lower()
-
-    def _find_key(self, name: str) -> str:
-        """Return exact key if exists, otherwise a fuzzy match, else 'unknown bird'."""
-        norm = self._normalize(name)
-        # exact match
-        if name in self.bird_data:
-            return name
-        # case‑insensitive match
-        for k in self.bird_data:
-            if self._normalize(k) == norm:
-                return k
-        # fallback
-        return "Unknown Bird"
-
-    def __call__(self, bird_name):
-        key = self._find_key(bird_name)
-        if key not in self.bird_data:
-            raise ValueError(f"Bird data missing for fallback key '{key}'")
-
-        d   = self.bird_data[key]
-        b64_list = d.get('images_b64', [])
-        desc = d.get('description', 'A beautiful bird.')
-        colors = d.get('colors', [])
-
-        cp = ", ".join([c.strip() for c in colors]) if colors else "colorful"
-        story = random.choice(self.templates).format(
-            name=key if key != "Unknown Bird" else bird_name,
-            color_phrase=cp, desc=desc)
-
-        # ---- TTS -------------------------------------------------
-        audio_file = "narration.mp3"
-        gTTS(text=story, lang='en', tld='com').save(audio_file)
-
-        audio = AudioFileClip(audio_file)
-        narration = audio_fadein(audio, 0.6).audio_fadeout(1.2)
-
-        # ---- Decode images + Ken‑Burns ---------------------------
-        clips = []
-        dur = 4.0
-        for b64_str in b64_list:
-            img_bytes = base64.b64decode(b64_str)
-            tmp = f"tmp_{random.randint(0,9999)}.jpg"
-            with open(tmp, "wb") as f:
-                f.write(img_bytes)
-
-            clip = ImageClip(tmp).set_duration(dur)
-            clip = clip.resize(lambda t: 1 + 0.15*(t/dur))
-            clip = clip.fadein(0.3).fadeout(0.3)
-            clips.append(clip)
-
-        if not clips:
-            # ---- create a single placeholder frame if no images ----
-            placeholder = Image.new("RGB", (640, 480), (100, 120, 140))
-            tmp = f"tmp_placeholder_{random.randint(0,9999)}.jpg"
-            placeholder.save(tmp)
-            clip = ImageClip(tmp).set_duration(dur).fadein(0.3).fadeout(0.3)
-            clips.append(clip)
-
-        video = concatenate_videoclips(clips, method="compose")
-        total = dur * len(clips)
-
-        if narration.duration > total:
-            narration = narration.subclip(0, total)
-        else:
-            narration = narration.loop(duration=total)
-
-        video = video.set_audio(narration).resize(height=720)
-
-        # ---- Write to memory ------------------------------------
-        buf = io.BytesIO()
-        video.write_videofile(buf, fps=24, codec="libx264", audio_codec="aac",
-                              verbose=False, logger=None)
-        buf.seek(0)
-
-        # ---- cleanup --------------------------------------------
-        if os.path.exists(audio_file):
-            os.remove(audio_file)
-        for f in glob.glob("tmp_*.jpg"):
-            try: os.remove(f)
-            except: pass
-
-        return buf.read()@st.cache_data(show_spinner=False)
-def generate_video_bytes(_maker, species_name):
-    """Return MP4 bytes for a given species (cached)."""
-    return _maker(species_name)          # <-- calls AllBirdsVideoMaker.__call__
+# Display logo (centered and resized to one-quarter of original dimensions)
 def _set_background_glass(img_path: str = "ugb1.png"):
     """Set a full-page background using the given image and add a translucent glass
     style to the main Streamlit block container so content appears on a frosted panel.
@@ -503,62 +361,27 @@ with st.container():
                     st.error("Model or label map not loaded. Please check if the files exist.")
 
             
-            # ----------  RESULT DISPLAY (Upload tab) ----------
-if 'upload_result' in st.session_state and st.session_state.upload_result:
-    result = st.session_state.upload_result
-    species = result['species']                     # <-- defined here
+            if 'upload_result' in st.session_state and st.session_state.upload_result:
+                result = st.session_state.upload_result
+                st.markdown("<div class='result-title'>🦅 Identification Result</div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class='result-item'>
+                    <div class='result-species'>{result['species']}</div>
+                    <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-    st.markdown("<div class='result-title'>Identification Result</div>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class='result-item'>
-        <div class='result-species'>{species}</div>
-        <div class='result-confidence'>Confidence: {result['confidence']:.3f}%</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # -----  VIDEO SECTION  -----
-    maker = AllBirdsVideoMaker(bird_data, TEMPLATES)
-
-    # Cache video once per species (unique key)
-    video_key = f"vid_up_{species}"
-    if video_key not in st.session_state:
-        with st.spinner(f"Creating video for **{species}** …"):
-            try:
-                video_bytes = generate_video_bytes(maker, species)   # uses @st.cache_data
-                st.session_state[video_key] = video_bytes
-            except Exception as e:
-                st.error(f"Video generation error: {e}")
-                st.session_state[video_key] = None
-
-    video_bytes = st.session_state.get(video_key)
-
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if video_bytes and st.button("Watch Video", key=f"watch_up_{species}"):
-            st.video(video_bytes)
-
-    with col2:
-        if video_bytes:
-            st.download_button(
-                label="Download Video",
-                data=video_bytes,
-                file_name=f"{species.replace(' ', '_')}.mp4",
-                mime="video/mp4",
-                key=f"dl_up_{species}"
-            )
-        else:
-            st.write("—")
-    with col2:
-        if video_bytes:
-            st.download_button(
-                label="Download Video",
-                data=video_bytes,
-                file_name=f"{species.replace(' ', '_')}.mp4",
-                mime="video/mp4",
-                key=f"dl_up_{species}"
-            )
-        else:
-            st.write("—")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Watch Video", key="watch_video_upload_button"):
+                video_path = "Blacks.mp4"
+                try:
+                    with open(video_path, "rb") as video_file:
+                        video_bytes = video_file.read()
+                    st.video(video_bytes)
+                except FileNotFoundError:
+                    st.error("Video file 'Blacks.mp4' not found. Make sure it's in the same folder as app.py.")
+                except Exception as e:
+                    st.error(f"Could not load video: {e}")
 
             
 
