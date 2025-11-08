@@ -487,12 +487,26 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
 
-            
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Watch Video", key="watch_video_upload_button"):
+                video_path = "Blacks.mp4"
+                try:
+                    with open(video_path, "rb") as video_file:
+                        video_bytes = video_file.read()
+                    st.video(video_bytes)
+                except FileNotFoundError:
+                    st.error("Video file 'Blacks.mp4' not found. Make sure it's in the same folder as app.py.")
+                except Exception as e:
+                    st.error(f"Could not load video: {e}")
+            #123
             st.title("Uganda Bird Video Generator")
             st.caption("Enter a bird name → get a narrated video")
+
             with st.expander("Available birds"):
                 st.write(", ".join(sorted(bird_db.keys())))
-            bird_name = result['species'].strip().title()
+#12334
+            bird_name = st.text_input("Bird Name", placeholder="e.g. African Jacana").strip().title()
+
             if bird_name:
                 if bird_name not in bird_db:
                     st.error(f"**{bird_name}** not found.")
@@ -501,21 +515,32 @@ with st.container():
                         with st.spinner("Generating..."):
                             data = bird_db[bird_name]
                             story = generate_story(bird_name, data["desc"], data["colors"])
+
+                # Temp dir
                             tmp = tempfile.mkdtemp()
                             img_paths = []
+
+                # Decode images
                             for i, b64 in enumerate(data["images_b64"]):
                                 img_data = base64.b64decode(b64)
                                 img = Image.open(BytesIO(img_data))
                                 p = os.path.join(tmp, f"img_{i}.jpg")
                                 img.save(p, "JPEG")
                                 img_paths.append(p)
+
+                # TTS
                             audio_path = os.path.join(tmp, "voice.mp3")
                             natural_tts(story, audio_path)
+
+                # Video
                             out_path = os.path.join(tmp, f"{bird_name.replace(' ', '_')}.mp4")
                             create_video(img_paths, audio_path, out_path)
+
+                # Show
                             st.video(out_path)
                             with open(out_path, "rb") as f:
                                 st.download_button("Download Video", f, f"{bird_name}.mp4", "video/mp4")
+
                             shutil.rmtree(tmp, ignore_errors=True)
                             st.success("Done!")
 
