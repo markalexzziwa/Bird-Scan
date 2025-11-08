@@ -11,14 +11,164 @@ from gtts import gTTS
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 import tempfile
 import random
-#1234
+
+#123
+# app.py
 import streamlit as st
 import torch
 import os
+import base64
 import tempfile
 import shutil
 from pathlib import Path
+from io import BytesIO
+from PIL import Image
 
+from moviepy.editor import (
+    AudioFileClip, ImageClip, concatenate_videoclips, concatenate_audioclips
+)
+from moviepy.audio.fx.all import audio_fadein, audio_fadeout
+from moviepy.video.fx.all import resize
+from moviepy.config import change_settings
+
+# Fix ImageMagick
+os.environ["IMAGEMAGICK_BINARY"] = "/usr/bin/convert"
+change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STORY TEMPLATES
+# ─────────────────────────────────────────────────────────────────────────────
+TEMPLATES = [
+    "Deep in Uganda's lush forests, the {name} flashes its {color_phrase} feathers. {desc} It dances on branches at dawn, a true jewel of the Pearl of Africa.",
+    "Along the Nile's banks, the {name} stands tall with {color_phrase} plumage. {desc} Fishermen smile when they hear its melodic call at sunrise.",
+    "In Queen Elizabeth National Park, the {name} soars above acacia trees. {desc} Its {color_phrase} wings catch the golden light of the savanna.",
+    "Near Lake Victoria, the {name} perches quietly. {desc} Children in fishing villages know its {color_phrase} colors mean good luck for the day.",
+    "High in the Rwenzori Mountains, the {name} sings through mist. {desc} Its {color_phrase} feathers shine like emeralds in the cloud forest.",
+    "In Murchison Falls, the {name} glides over roaring waters. {desc} Tourists gasp at its {color_phrase} beauty against the dramatic backdrop.",
+    "Among papyrus swamps, the {name} wades gracefully. {desc} Its long legs and {color_phrase} crest make it the king of the wetlands.",
+    "At sunset in Kidepo Valley, the {name} calls across the plains. {desc} Its {color_phrase} silhouette is a symbol of Uganda's wild heart.",
+    "In Bwindi's ancient rainforest, the {name} flits between vines. {desc} Gorilla trackers pause to admire its {color_phrase} brilliance.",
+    "By the shores of Lake Mburo, the {name} reflects in calm waters. {desc} Its {color_phrase} feathers mirror the peace of the savanna night."
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOAD BIRD DATA (safe)
+# ─────────────────────────────────────────────────────────────────────────────
+@st.cache_resource
+def load_bird_data():
+    pth_path = "bird_data.pth"
+    if not Path(pth_path).exists():
+        st.error(f"Missing `{pth_path}`. Upload it to your app folder.")
+        st.stop()
+    return torch.load(pth_path, map_location="cpu")
+
+bird_db = load_bird_data()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STORY GENERATOR
+# ─────────────────────────────────────────────────────────────────────────────
+def generate_story(name, desc, colors):
+    import random
+    color_phrase = ", ".join(colors) if colors else "vibrant"
+    desc = desc.strip().capitalize() if desc else "A fascinating bird with unique habits."
+    tmpl = random.choice(TEMPLATES)
+    return tmpl.format(name=name, color_phrase=color_phrase, desc=desc)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TTS
+# ─────────────────────────────────────────────────────────────────────────────
+def natural_tts(text, path):
+    try:
+        from gtts import gTTS
+        tts = gTTS(text, lang='en')
+        tts.save(path)
+        return path
+    except Exception as e:
+        raise RuntimeError(f"TTS failed: {e}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# KEN BURNS
+# ─────────────────────────────────────────────────────────────────────────────
+def ken_burns_clip(img_path, duration=4.0):
+    clip = ImageClip(img_path).set_duration(duration)
+    w, h = clip.size
+    zoom = 1.15
+    clip = clip.resize(lambda t: 1 + (zoom - 1) * (t / duration))
+    clip = clip.set_position(lambda t: (
+        "center" if t < duration * 0.6 else (w * 0.05 * (t - duration * 0.6) / (duration * 0.4)),
+        "center"
+    ))
+    return clip.fadein(0.3).fadeout(0.3)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VIDEO
+# ─────────────────────────────────────────────────────────────────────────────
+def create_video(image_paths, audio_path, output_path):
+    audio = AudioFileClip(audio_path)
+    audio = audio_fadein(audio, 0.6).audio_fadeout(1.2)
+
+    duration_per_img = 4.0
+    total = duration_per_img * len(image_paths)
+
+    if audio.duration < total:
+        loops = int(total / audio.duration) + 1
+        audio = concatenate_audioclips([audio] * loops).subclip(0, total)
+    else:
+        audio = audio.subclip(0, total)
+
+    clips = [ken_burns_clip(img, duration_per_img) for img in image_paths]
+    video = concatenate_videoclips(clips, method="compose").set_audio(audio)
+    video = video.resize(height=720)
+    video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac", preset="medium")
+    return output_path
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN UI
+# ─────────────────────────────────────────────────────────────────────────────
+st.title("Uganda Bird Video Generator")
+st.caption("Enter a bird name → get a narrated video")
+
+with st.expander("Available birds"):
+    st.write(", ".join(sorted(bird_db.keys())))
+
+bird_name = st.text_input("Bird Name", placeholder="e.g. African Jacana").strip().title()
+
+if bird_name:
+    if bird_name not in bird_db:
+        st.error(f"**{bird_name}** not found.")
+    else:
+        if st.button("Generate Video", type="primary"):
+            with st.spinner("Generating..."):
+                data = bird_db[bird_name]
+                story = generate_story(bird_name, data["desc"], data["colors"])
+
+                # Temp dir
+                tmp = tempfile.mkdtemp()
+                img_paths = []
+
+                # Decode images
+                for i, b64 in enumerate(data["images_b64"]):
+                    img_data = base64.b64decode(b64)
+                    img = Image.open(BytesIO(img_data))
+                    p = os.path.join(tmp, f"img_{i}.jpg")
+                    img.save(p, "JPEG")
+                    img_paths.append(p)
+
+                # TTS
+                audio_path = os.path.join(tmp, "voice.mp3")
+                natural_tts(story, audio_path)
+
+                # Video
+                out_path = os.path.join(tmp, f"{bird_name.replace(' ', '_')}.mp4")
+                create_video(img_paths, audio_path, out_path)
+
+                # Show
+                st.video(out_path)
+                with open(out_path, "rb") as f:
+                    st.download_button("Download Video", f, f"{bird_name}.mp4", "video/mp4")
+
+                shutil.rmtree(tmp, ignore_errors=True)
+                st.success("Done!")
 # Display logo (centered and resized to one-quarter of original dimensions)
 def _set_background_glass(img_path: str = "ugb1.png"):
     """Set a full-page background using the given image and add a translucent glass
@@ -463,61 +613,6 @@ with st.container():
             if st.button("Stop Camera ⏹️", key="stop_camera_button", help="Click to stop camera preview"):
                 st.session_state.camera_active = False
         st.markdown("</div>", unsafe_allow_html=True)
-    @st.cache_resource
-    def load_modal():
-        pth_path = "bird_video_generator_modal.pth"
-        if not Path(pth_path).exists():
-            st.error(f"Cannot find `{pth_path}`. Place it in the same folder as this script.")
-            st.stop()
-        return torch.load(pth_path, map_location="cpu")
-
-    modal = load_modal()
-
-# ───── Show available birds (optional help) ─────
-    available = sorted(modal.db.keys())
-    with st.expander("See all birds in the database"):
-        st.write(", ".join(available))
-
-# ───── User input ─────
-    bird_name = st.text_input(
-        "Bird name (exact match, case-insensitive)",
-        placeholder="e.g. African Jacana"
-    ).strip()
-
-    if bird_name:
-        bird_name = bird_name.title()               # normalise
-        if bird_name not in modal.db:
-            st.error(f"**{bird_name}** not found. Pick one from the list above.")
-        else:
-            if st.button("Generate Video", type="primary"):
-                with st.spinner(f"Creating video for **{bird_name}** …"):
-                # temporary folder for this run
-                    tmp_dir = tempfile.mkdtemp()
-                    output_path = os.path.join(tmp_dir, f"{bird_name.replace(' ', '_')}_video.mp4")
-
-                    try:
-                        video_file = modal.generate(bird_name, output_path)
-                    except Exception as e:
-                        shutil.rmtree(tmp_dir, ignore_errors=True)
-                        st.exception(e)
-                        st.stop()
-
-                # ───── Show video + download ─────
-                    st.video(video_file)
-
-                    with open(video_file, "rb") as f:
-                        st.download_button(
-                            label="Download MP4",
-                            data=f,
-                            file_name=Path(video_file).name,
-                            mime="video/mp4"
-                    )
-
-                # clean up
-                    shutil.rmtree(tmp_dir, ignore_errors=True)
-                    st.success("Done!")
-
-
 
     st.markdown(
         """
