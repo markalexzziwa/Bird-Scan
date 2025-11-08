@@ -34,6 +34,11 @@ from moviepy.config import change_settings
 # Fix ImageMagick
 os.environ["IMAGEMAGICK_BINARY"] = "/usr/bin/convert"
 change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
+from PIL import Image
+
+# Restore ANTIALIAS for backward compatibility
+if not hasattr(Image, 'ANTIALIAS'):
+    Image.ANTIALIAS = Image.LANCZOS
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STORY TEMPLATES
