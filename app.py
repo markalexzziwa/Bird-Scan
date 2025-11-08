@@ -499,49 +499,49 @@ with st.container():
                 except Exception as e:
                     st.error(f"Could not load video: {e}")
             #123
-            st.title("Uganda Bird Video Generator")
-            st.caption("Enter a bird name → get a narrated video")
+                st.title("Uganda Bird Video Generator")
+                st.caption("Enter a bird name → get a narrated video")
 
-            with st.expander("Available birds"):
-                st.write(", ".join(sorted(bird_db.keys())))
+                with st.expander("Available birds"):
+                    st.write(", ".join(sorted(bird_db.keys())))
 
-            predicted_name = result['species'].strip().title()
-            st.session_state.bird_name_input = predicted_name  # This fills the box below
+                predicted_name = result['species'].strip().title()
+                st.session_state.bird_name_input = predicted_name  # This fills the box below
 
             # AUTO-GENERATE VIDEO (no button needed)
-            if predicted_name in bird_db:
-                with st.spinner(f"Generating video for **{predicted_name}**..."):
-                    data = bird_db[predicted_name]
-                    story = generate_story(predicted_name, data["desc"], data["colors"])
+                if predicted_name in bird_db:
+                    with st.spinner(f"Generating video for **{predicted_name}**..."):
+                        data = bird_db[predicted_name]
+                        story = generate_story(predicted_name, data["desc"], data["colors"])
 
-                    tmp = tempfile.mkdtemp()
-                    img_paths = []
+                        tmp = tempfile.mkdtemp()
+                        img_paths = []
 
                     # Decode images
-                    for i, b64 in enumerate(data["images_b64"]):
-                        img_data = base64.b64decode(b64)
-                        img = Image.open(BytesIO(img_data))
-                        p = os.path.join(tmp, f"img_{i}.jpg")
-                        img.save(p, "JPEG")
-                        img_paths.append(p)
+                        for i, b64 in enumerate(data["images_b64"]):
+                            img_data = base64.b64decode(b64)
+                            img = Image.open(BytesIO(img_data))
+                            p = os.path.join(tmp, f"img_{i}.jpg")
+                            img.save(p, "JPEG")
+                            img_paths.append(p)
 
                     # TTS
-                    audio_path = os.path.join(tmp, "voice.mp3")
-                    natural_tts(story, audio_path)
+                        audio_path = os.path.join(tmp, "voice.mp3")
+                        natural_tts(story, audio_path)
 
                     # Video
-                    out_path = os.path.join(tmp, f"{predicted_name.replace(' ', '_')}.mp4")
-                    create_video(img_paths, audio_path, out_path)
+                        out_path = os.path.join(tmp, f"{predicted_name.replace(' ', '_')}.mp4")
+                        create_video(img_paths, audio_path, out_path)
 
                     # Show video
-                    st.video(out_path)
-                    with open(out_path, "rb") as f:
-                        st.download_button("Download Video", f, f"{predicted_name}.mp4", "video/mp4")
+                        st.video(out_path)
+                        with open(out_path, "rb") as f:
+                            st.download_button("Download Video", f, f"{predicted_name}.mp4", "video/mp4")
 
-                    shutil.rmtree(tmp, ignore_errors=True)
-                    st.success("Video generated automatically!")
-            else:
-                st.warning(f"**{predicted_name}** not in video database.")
+                        shutil.rmtree(tmp, ignore_errors=True)
+                        st.success("Successfully loaded video!")
+                else:
+                    st.warning(f"**{predicted_name}** not in video database.")
 
         # ──────────
 
