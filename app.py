@@ -490,9 +490,6 @@ with st.container():
             if 'upload_result' in st.session_state and st.session_state.upload_result:
                 result = st.session_state.upload_result
                 bird_name = result['species'].strip().title()
-            else:
-                bird_name = st.text_input("Bird Name", placeholder="e.g. African Jacana").strip().title()
-
 
             if bird_name:
                 if bird_name not in bird_db:
