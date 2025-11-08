@@ -505,7 +505,7 @@ with st.container():
             with st.expander("Available birds"):
                 st.write(", ".join(sorted(bird_db.keys())))
 
-            bird_name = result['species'].strip().title()
+            bird_name = {result['species']}.strip().title()
             if bird_name:
                 if bird_name not in bird_db:
                     st.error(f"**{bird_name}** not found.")
